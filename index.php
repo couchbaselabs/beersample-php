@@ -123,10 +123,16 @@ $app->get('/breweries', function() use ($app, $cb) {
 });
 
 // Delete Beer (GET /beers/delete/<ID>)
-
+$app->get('/beers/delete/{id}', function($id) use ($app, $cb) {
+    $cb->delete($id);
+    return $app->redirect('/beersample-php/beers');
+});
 
 // Delete Brewery (GET /breweries/delete/<ID>)
-
+$app->get('/breweries/delete/{id}', function($id) use ($app, $cb) {
+    $cb->delete($id);
+    return $app->redirect('/beersample-php/breweries');
+});
 
 // Search via AJAX for beers (GET /beers/search)
 $app->get('/beers/search', function(Request $request) use ($app, $cb) {
