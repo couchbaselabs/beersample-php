@@ -1,0 +1,17 @@
+{% extends "layout.twig.html" %}
+
+{% block content %}
+<h3>Show Details for Beer "{{beer.name}}"</h3>
+<table class="table table-striped">
+    <tbody>
+       {% for key,attribute in beer %}
+        <c:forEach items="${beer}" var="item">
+            <tr>
+                <td><strong>{{key}}</strong></td>
+                <td>{{attribute}}</td>
+            </tr>
+          </c:forEach>
+          {% endfor %}
+    </tbody>
+</table>
+{% endblock %}
