@@ -33,10 +33,9 @@ use Silex\Provider\TwigServiceProvider;
  * one place makes it better organized and easier to refactor.
  */
 define("SILEX_DEBUG", true);
-define("COUCHBASE_HOSTS", "127.0.0.1");
+define("COUCHBASE_CONNSTR", "http://127.0.0.1");
 define("COUCHBASE_BUCKET", "beer-sample");
 define("COUCHBASE_PASSWORD", "");
-define("COUCHBASE_CONN_PERSIST", true);
 
 define("INDEX_DISPLAY_LIMIT", 20);
 
@@ -56,13 +55,8 @@ $app = new Application();
 $app['debug'] = SILEX_DEBUG;
 
 // Connecting to Couchbase
-$cb = new Couchbase(
-    COUCHBASE_HOSTS,
-    "beer-sample",
-    COUCHBASE_PASSWORD,
-    COUCHBASE_BUCKET,
-    COUCHBASE_CONN_PERSIST
-);
+$cluster = new CouchbaseCluster(COUCHBASE_CONNSTR);
+$cb = $cluster->openBucket(COUCHBASE_BUCKET, COUCHBASE_PASSWORD);
 
 // Register the Template Engine
 $app->register(new TwigServiceProvider(), array(
@@ -83,15 +77,16 @@ $app->get('/', function() use ($app, $cb) {
 
 // List all Beers (GET /beers)
 $app->get('/beers', function() use ($app, $cb) {
-    $results = $cb->view("beer", "by_name", array(
-        'limit' => INDEX_DISPLAY_LIMIT
-    ));
+    $results = $cb->query(
+        CouchbaseViewQuery::from("beer", "by_name")
+            ->limit(INDEX_DISPLAY_LIMIT)
+    );
 
     $beers = array();
     foreach($results['rows'] as $row) {
         $doc = $cb->get($row['id']);
         if($doc) {
-            $doc = json_decode($doc, true);
+            $doc = json_decode($doc->value, true);
             $beers[] = array(
                 'name' => $doc['name'],
                 'brewery' => $doc['brewery_id'],
@@ -106,13 +101,14 @@ $app->get('/beers', function() use ($app, $cb) {
 
 // List all Breweries (GET /breweries)
 $app->get('/breweries', function() use ($app, $cb) {
-    $results = $cb->view("brewery", "by_name", array(
-        'limit' => INDEX_DISPLAY_LIMIT
-    ));
+    $results = $cb->query(
+        CouchbaseViewQuery::from("brewery", "by_name")
+            ->limit(INDEX_DISPLAY_LIMIT)
+    );
 
     $breweries = array();
     foreach($results['rows'] as $row) {
-        $doc = $cb->get($row['id']);
+        $doc = $cb->get($row['id'])->value;
         if($doc) {
             $breweries[] = array(
                 'name' => $row['key'],
@@ -133,7 +129,7 @@ $app->get('/breweries', function() use ($app, $cb) {
 $app->get('/beers/show/{id}', function($id) use ($app, $cb) {
     $beer = $cb->get($id);
     if($beer) {
-       $beer = json_decode($beer, true);
+       $beer = json_decode($beer->value, true);
        $beer['id'] = $id;
     } else {
        return $app->redirect('/beers');
@@ -149,7 +145,7 @@ $app->get('/beers/show/{id}', function($id) use ($app, $cb) {
 $app->get('/breweries/show/{id}', function($id) use ($app, $cb) {
     $brewery = $cb->get($id);
     if($brewery) {
-       $brewery = json_decode($brewery, true);
+       $brewery = json_decode($brewery->value, true);
        $brewery['id'] = $id;
     } else {
        return $app->redirect('/breweries');
@@ -193,7 +189,7 @@ $app->post('/beers/edit/{id}', function(Request $request, $id) use ($app, $cb) {
 $app->get('/beers/edit/{id}', function($id) use ($app, $cb) {
     $beer = $cb->get($id);
     if($beer) {
-       $beer = json_decode($beer, true);
+       $beer = json_decode($beer->value, true);
        $beer['id'] = $id;
     } else {
        return $app->redirect('/beers');
@@ -209,18 +205,17 @@ $app->get('/beers/edit/{id}', function($id) use ($app, $cb) {
 $app->get('/beers/search', function(Request $request) use ($app, $cb) {
     $input = strtolower($request->query->get('value'));
 
-    $options = array(
-      'limit' => INDEX_DISPLAY_LIMIT,
-      'startkey' => $input,
-      'endkey' => $input . '\uefff'
-    );
-    $results = $cb->view("beer", "by_name", $options);
+    // Query the view
+    $q = CouchbaseViewQuery::from('beer', 'by_name')
+        ->limit(INDEX_DISPLAY_LIMIT)
+        ->range($input, $input . '\uefff');
+    $results = $cb->query($q);
 
     $beers = array();
     foreach($results['rows'] as $row) {
         $doc = $cb->get($row['id']);
         if($doc) {
-            $doc = json_decode($doc, true);
+            $doc = json_decode($doc->value, true);
             $beers[] = array(
                 'name' => $doc['name'],
                 'brewery' => $doc['brewery_id'],
@@ -237,18 +232,18 @@ $app->get('/beers/search', function(Request $request) use ($app, $cb) {
 $app->get('/breweries/search', function(Request $request) use ($app, $cb) {
     $input = strtolower($request->query->get('value'));
 
-    $options = array(
-      'limit' => INDEX_DISPLAY_LIMIT,
-      'startkey' => $input,
-      'endkey' => $input . '\uefff'
-    );
-    $results = $cb->view("brewery", "by_name", $options);
+    // Define the Query options
+    // Query the view
+    $q = CouchbaseViewQuery::from('brewery', 'by_name')
+        ->limit(INDEX_DISPLAY_LIMIT)
+        ->range($input, $input . '\uefff');
+    $results = $cb->query($q);
 
     $breweries = array();
     foreach($results['rows'] as $row) {
         $doc = $cb->get($row['id']);
         if($doc) {
-            $doc = json_decode($doc, true);
+            $doc = json_decode($doc->value, true);
             $breweries[] = array(
                 'name' => $doc['name'],
                 'id' => $row['id']
