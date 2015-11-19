@@ -1,0 +1,42 @@
+{% extends "layout.twig.html" %}
+
+{% block content %}
+<h3>Edit Brewery</h3>
+
+<form method="post" action="/beersample-php/breweries/edit/{{brewery.id}}">
+    <fieldset>
+      <legend>General Info</legend>
+      <div class="span12">
+        <div class="span6">
+          <label>Name</label>
+          <input type="text" name="brewery_name" placeholder="The name of the brewery." value="{{brewery.name}}">
+
+          <label>Description</label>
+          <input type="text" name="brewery_description" placeholder="A short description." value="{{brewery.description}}">
+        </div>
+      </div>
+    </fieldset>
+    <fieldset>
+        <legend>Details</legend>
+        <div class="span12">
+            <div class="span6">
+              <label>City</label>
+              <input type="text" name="brewery_city" placeholder="The brewery's City" value="{{brewery.city}}">
+
+              <label>Phone</label>
+              <input type="text" name="brewery_phone" placeholder="The brewery's Phone" value="{{brewery.phone}}">
+            </div>
+            <div class="span6">
+              <label>State</label>
+              <input type="text" name="brewery_state" placeholder="The brewery's State" value="{{brewery.state}}">
+
+              <label>Website</label>
+              <input type="text" name="brewery_website" placeholder="The brewery's Website" value="{{brewery.website}}">
+            </div>
+        </div>
+    </fieldset>
+    <div class="form-actions">
+        <button type="submit" class="btn btn-primary">Save changes</button>
+    </div>
+</form>
+{% endblock %}

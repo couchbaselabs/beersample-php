@@ -201,6 +201,38 @@ $app->get('/beers/edit/{id}', function($id) use ($app, $cb) {
     );
 });
 
+// Show Brewery Form
+$app->get('/breweries/edit/{id}', function($id) use ($app, $cb) {
+    $brewery = $cb->get($id);
+    if($brewery) {
+       $brewery = json_decode($brewery->value, true);
+       $brewery['id'] = $id;
+    } else {
+       return $app->redirect('/breweries');
+    }
+
+    return $app['twig']->render(
+        'breweries/edit.twig.html',
+        compact('brewery')
+    );
+});
+
+// Store submitted Brewery Data (POST /breweries/edit/<ID>)
+$app->post('/breweries/edit/{id}', function(Request $request, $id) use ($app, $cb) {
+    $data = $request->request;
+
+    $newbrewery = array();
+    foreach($data as $name => $value) {
+        $name = str_replace('brewery_', '', $name);
+        $newbrewery[$name] = $value;
+    }
+
+    $newbrewery['type'] = 'brewery';
+    $cb->upsert($id, json_encode($newbrewery));
+
+    return $app->redirect('/beersample-php/breweries/show/' . $id);
+});
+
 // Search via AJAX for beers (GET /beers/search)
 $app->get('/beers/search', function(Request $request) use ($app, $cb) {
     $input = strtolower($request->query->get('value'));
