@@ -79,7 +79,9 @@ $app->get('/', function() use ($app, $cb) {
 $app->get('/beers', function() use ($app, $cb) {
     $results = $cb->query(
         CouchbaseViewQuery::from("beer", "by_name")
-            ->limit(INDEX_DISPLAY_LIMIT)
+            ->limit(INDEX_DISPLAY_LIMIT),
+        null,
+        true
     );
 
     $beers = array();
@@ -103,7 +105,9 @@ $app->get('/beers', function() use ($app, $cb) {
 $app->get('/breweries', function() use ($app, $cb) {
     $results = $cb->query(
         CouchbaseViewQuery::from("brewery", "by_name")
-            ->limit(INDEX_DISPLAY_LIMIT)
+            ->limit(INDEX_DISPLAY_LIMIT),
+        null,
+        true
     );
 
     $breweries = array();
@@ -180,7 +184,7 @@ $app->post('/beers/edit/{id}', function(Request $request, $id) use ($app, $cb) {
     }
 
     $newbeer['type'] = 'beer';
-    $cb->set($id, json_encode($newbeer));
+    $cb->upsert($id, json_encode($newbeer));
 
     return $app->redirect('/beersample-php/beers/show/' . $id);
 });
@@ -209,7 +213,7 @@ $app->get('/beers/search', function(Request $request) use ($app, $cb) {
     $q = CouchbaseViewQuery::from('beer', 'by_name')
         ->limit(INDEX_DISPLAY_LIMIT)
         ->range($input, $input . '\uefff');
-    $results = $cb->query($q);
+    $results = $cb->query($q, null, true);
 
     $beers = array();
     foreach($results['rows'] as $row) {
@@ -237,7 +241,7 @@ $app->get('/breweries/search', function(Request $request) use ($app, $cb) {
     $q = CouchbaseViewQuery::from('brewery', 'by_name')
         ->limit(INDEX_DISPLAY_LIMIT)
         ->range($input, $input . '\uefff');
-    $results = $cb->query($q);
+    $results = $cb->query($q, null, true);
 
     $breweries = array();
     foreach($results['rows'] as $row) {
